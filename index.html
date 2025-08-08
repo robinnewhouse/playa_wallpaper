@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Burning Man Camp Wallpaper Generator</title>
+  <!-- Google Fonts: Montserrat -->
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:700&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #181818;
+      color: #fff;
+      font-family: 'Montserrat', Arial, sans-serif;
+      min-height: 100vh;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5em;
+      text-align: center;
+    }
+    label {
+      font-size: 1.1rem;
+      margin-bottom: 0.5em;
+      display: block;
+      text-align: center;
+    }
+    input[type="text"] {
+      font-size: 1.2rem;
+      padding: 0.5em 1em;
+      border-radius: 6px;
+      border: none;
+      margin-bottom: 1em;
+      width: 90vw;
+      max-width: 350px;
+      box-sizing: border-box;
+      text-align: center;
+      font-family: 'Montserrat', Arial, sans-serif;
+    }
+    #wallpaper-preview {
+      display: block;
+      margin: 1.5em auto 1em auto;
+      width: 100vw;
+      max-width: 400px;
+      height: auto;
+      background: #222;
+      border-radius: 12px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.3);
+    }
+    button {
+      background: #fff;
+      color: #181818;
+      font-family: 'Montserrat', Arial, sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 6px;
+      padding: 0.7em 2em;
+      margin-top: 1em;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    button:hover {
+      background: #ffd700;
+      color: #181818;
+    }
+    @media (max-width: 500px) {
+      #wallpaper-preview {
+        max-width: 98vw;
+      }
+      input[type="text"] {
+        max-width: 98vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Burning Man Camp Wallpaper</h1>
+  <label for="name-input">Enter your name:</label>
+  <input type="text" id="name-input" maxlength="32" placeholder="Your Name" autocomplete="off">
+  <canvas id="wallpaper-preview"></canvas>
+  <button id="download-btn">Download Wallpaper</button>
+
+  <script>
+    // Config
+    const BG_IMG_SRC = 'black_rock_observatory.jpg';
+    const FONT_FAMILY = 'Montserrat, Arial, sans-serif';
+    const FONT_WEIGHT = 'bold';
+    const TEXT_COLOR = '#fff';
+    const TEXT_MARGIN_BOTTOM = 0.08; // % of image height from bottom
+    const MAX_FONT_SIZE_RATIO = 0.10; // % of image height
+    const MIN_FONT_SIZE = 24; // px
+    const MAX_FONT_SIZE = 120; // px
+    const SIDE_MARGIN = 0.06; // % of image width
+
+    // Elements
+    const nameInput = document.getElementById('name-input');
+    const canvas = document.getElementById('wallpaper-preview');
+    const ctx = canvas.getContext('2d');
+    const downloadBtn = document.getElementById('download-btn');
+
+    // State
+    let bgImg = new window.Image();
+    let bgLoaded = false;
+    let imgWidth = 1080, imgHeight = 1920; // fallback
+
+    // Load background image
+    bgImg.onload = function() {
+      bgLoaded = true;
+      imgWidth = bgImg.naturalWidth;
+      imgHeight = bgImg.naturalHeight;
+      updateCanvasSize();
+      drawWallpaper();
+    };
+    bgImg.onerror = function() {
+      alert('Failed to load background.jpg. Please add it to the same folder.');
+    };
+    bgImg.src = BG_IMG_SRC;
+
+    // Responsive canvas size for preview (output always native size)
+    function updateCanvasSize() {
+      // For preview, scale to fit screen but keep aspect ratio
+      let maxPreviewWidth = Math.min(window.innerWidth * 0.98, 400);
+      let scale = maxPreviewWidth / imgWidth;
+      canvas.width = imgWidth;
+      canvas.height = imgHeight;
+      canvas.style.width = (imgWidth * scale) + 'px';
+      canvas.style.height = (imgHeight * scale) + 'px';
+    }
+
+    // Draw wallpaper with name
+    function drawWallpaper() {
+      if (!bgLoaded) return;
+      // Draw background
+      ctx.clearRect(0, 0, imgWidth, imgHeight);
+      ctx.drawImage(bgImg, 0, 0, imgWidth, imgHeight);
+      // Draw name
+      let name = nameInput.value.trim() || 'Your Name';
+      let maxWidth = imgWidth * (1 - 2 * SIDE_MARGIN);
+      // Auto font size
+      let fontSize = Math.floor(imgHeight * MAX_FONT_SIZE_RATIO);
+      fontSize = Math.min(fontSize, MAX_FONT_SIZE);
+      fontSize = Math.max(fontSize, MIN_FONT_SIZE);
+      ctx.font = `${FONT_WEIGHT} ${fontSize}px ${FONT_FAMILY}`;
+      // Shrink font if too wide
+      while (ctx.measureText(name).width > maxWidth && fontSize > MIN_FONT_SIZE) {
+        fontSize -= 2;
+        ctx.font = `${FONT_WEIGHT} ${fontSize}px ${FONT_FAMILY}`;
+      }
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = TEXT_COLOR;
+      // Add subtle shadow for contrast
+      ctx.shadowColor = 'rgba(0,0,0,0.7)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 2;
+      let y = imgHeight * (1 - TEXT_MARGIN_BOTTOM);
+      ctx.fillText(name, imgWidth / 2, y);
+      ctx.shadowBlur = 0;
+    }
+
+    // Live update
+    nameInput.addEventListener('input', drawWallpaper);
+    window.addEventListener('resize', function() {
+      updateCanvasSize();
+    });
+    // Redraw on resize (with debounce)
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        updateCanvasSize();
+        drawWallpaper();
+      }, 100);
+    });
+
+    // Download wallpaper
+    downloadBtn.addEventListener('click', function() {
+      if (!bgLoaded) return;
+      // Always export at native resolution
+      drawWallpaper();
+      let link = document.createElement('a');
+      link.download = 'burningman_wallpaper.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+
+    // Initial draw (in case image is cached)
+    if (bgImg.complete && bgImg.naturalWidth) {
+      bgImg.onload();
+    }
+  </script>
+</body>
+</html>
